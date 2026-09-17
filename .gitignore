@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Permanent creator store: holds creators' emails and phone numbers. Never publish.
+creator_intelligence.db
+creator_intelligence.db-wal
+creator_intelligence.db-shm
+
+# Run caches and reports
+candidates_*.json
+harvest_*_report.json
+backfill_report.json
+discovery_run_report.json
+profile_audit_cache.json
+page_audit_cache.json
+llm_profiles/
+llm_discovery_answers.json
+llm_discovery_prompts.csv
+*.log
+
+# Client output
+deliverables/*.xlsx

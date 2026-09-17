@@ -1,0 +1,4 @@
+curl_cffi>=0.6
+openpyxl>=3.1
+playwright>=1.44        # only for the DOM fallback, directory pages and chatbot discovery
+faster-whisper>=1.0     # only for creator_language_id.py (Bengali speech check)
