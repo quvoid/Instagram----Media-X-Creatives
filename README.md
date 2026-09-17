@@ -1,9 +1,10 @@
 # Instagram Media X Creatives
 
-Two free, session-cookie-based Instagram tools for influencer marketing:
+Three free, session-cookie-based Instagram tools for influencer marketing:
 
 1. **Region-wise creator discovery** - find, verify and deep-scan creators who actually live in a city (Kolkata, Punjab, Hyderabad, Chennai, Mumbai, Delhi, Bangalore), with exact follower counts, emails, 90-day brand partnerships and content category.
 2. **Page momentum audit (Invest / Don't Invest)** - given a list of Instagram pages, sample their last 12 posts and rank them on current momentum.
+3. **Brand collaborator 4-tier scan** - given a brand's Instagram URL, find every creator who collaborated with it in the last 1 or 2 years and sort them into four tiers by paid-partnership toggle and boosted ad spend.
 
 No paid APIs. Everything runs through your own logged-in Instagram session.
 
@@ -29,6 +30,7 @@ core/creator_language_id.py  Bengali speech check via faster-whisper (video dele
 core/llm_discovery.py        ask ChatGPT / duck.ai / Perplexity for creators, resolve names via IG search
 core/kolkata_engine.py       legacy Kolkata-specific engine (kept for clean_cell + hub crawl)
 page_audit.py                Invest / Don't Invest momentum audit
+brand_collab_tiers.py        brand URL -> collaborators in window -> 4 tiers -> workbook
 scripts/run_kolkata_deep.py  one-shot: harvest -> audit -> deepscan -> export
 scripts/status.py            progress of a running pipeline
 docs/CREATOR_DB.md           schema, SQL recipes, worked client briefs
@@ -77,6 +79,33 @@ Per page: last 12 non-pinned posts via Instagram's own web GraphQL queries (post
 - **Invest** = above the tab median. So the verdict is relative to the page's own peer group, not a fixed threshold.
 
 Every metric used is written into the workbook next to the verdict. No colours, no emojis.
+
+## 3. Brand collaborator 4-tier scan
+
+```bash
+python brand_collab_tiers.py --url https://www.instagram.com/cred_club/ --brand CRED --years 2
+python brand_collab_tiers.py --url https://www.instagram.com/britanniaindustries/ --years 1 --max-scrolls 30 --output deliverables/britannia_tiers.xlsx
+```
+
+What it does: opens the brand's **Tagged** grid and **Reels** grid in a logged-in Playwright session, collects every post/reel URL, opens each one, keeps only posts inside the window (`--years` or `--days`) that have an author other than the brand (tagged creator, co-author, or the post's own author), and reads the paid-partnership label, likes, comments, views and date. Each creator's follower count is resolved exactly (`followers_precision` is written to the row). Nothing is estimated: if Instagram does not expose views for a post the row says 0, not a guess.
+
+### The four tiers
+
+Two independent signals per post:
+
+- **Toggle** - did the creator switch on Instagram's "Paid partnership with ..." label? That is the creator publicly declaring a commercial deal.
+- **Boosted** - does the engagement shape look like paid distribution rather than organic reach? Any one of: 1M+ views with a like rate under 0.35%; views over 5x the creator's followers with ER under 1%; 500K+ views with like rate under 0.5%; 50K+ likes; or an #ad / #collab / #sponsored caption with 100K+ views or 5K+ likes.
+
+| Tier | Toggle | Boosted | Meaning for a media buyer |
+|---|---|---|---|
+| **Tier 1** | ON | Yes | Declared paid deal *and* the brand put ad money behind it. The brand's highest-conviction creators - the ones it paid twice. |
+| **Tier 2** | ON | No | Declared paid deal, left to run organically. Confirmed commercial relationship, smaller budget. |
+| **Tier 3** | OFF | Yes | No declaration but the numbers say paid distribution. Usually an undisclosed deal, a barter run as an ad, or brand-side whitelisting. Worth checking manually. |
+| **Tier 4** | OFF | No | Organic mention, UGC, fan post or a sister-account cross-tag. Noise for partnership analysis. |
+
+The workbook has three tabs: executive summary (post and creator counts per tier, top creators), a per-creator sheet with the creator's size band (Nano / Micro / Mid / Macro / Mega on exact followers), and a per-post master sorted by tier then views with the boost reason and every metric used.
+
+Caveats: a sister brand tagging its parent shows up as a "collaborator" - check any single account that dominates the list. The tagged grid is newest-first, so raise `--max-scrolls` for brands with many tagged posts or the window will not be reached.
 
 ## Rules that apply everywhere
 - Never fabricate or round a follower count.
