@@ -74,10 +74,10 @@ def load_cookies() -> Dict[str, str]:
 
     if missing:
         raise RuntimeError(
-            "Instagram session not configured. Missing: " + ", ".join(missing) + "\n"
-            f"Create {ENV_FILE} with:\n"
-            "    IG_SESSIONID=...\n    IG_CSRFTOKEN=...\n    IG_DS_USER_ID=...\n    IG_MID=...\n"
-            "(copy them from a logged-in browser: DevTools -> Application -> Cookies -> instagram.com)"
+            "Instagram session not configured. Missing: " + ", ".join(missing) + "\n\n"
+            "    Run:  python setup.py\n\n"
+            "It walks you through copying the cookies from your logged-in browser "
+            f"and saves them to {ENV_FILE} (git-ignored)."
         )
     return cookies
 

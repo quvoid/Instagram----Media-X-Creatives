@@ -1,21 +1,31 @@
 ---
-name: ig-creator-intelligence
-description: Find, verify, tier and rank Instagram creators for a region, category, festival or client brief, and judge pages on current momentum. Use this whenever the user asks for creators from a city or state (Kolkata, Punjab, Hyderabad, Chennai, Mumbai, Delhi, Bangalore), creators who took part in a campaign like Durga Puja, a creator list for a client (Britannia, Enamor, Visa), how many creators we already have, a query over the creator database, a page audit with Invest / Don't Invest calls, average views or engagement on a list of pages, or asks a chatbot-style question like "who are the top creators in X". Trigger even when the user just pastes a list of Instagram URLs and asks for metrics.
+name: region-creator-discovery
+description: Find, verify and deep-research Instagram creators who actually live in a city or state (Kolkata, Punjab, Hyderabad, Chennai, Mumbai, Delhi, Bangalore) - exact follower counts, emails, 90-day brand partnerships, content category, campaign participation like Durga Puja. Use whenever the user asks for creators from a place, a creator list for a client brief, how many creators we have, creators above N followers with email, or any query over the creator database.
 ---
 
-# Instagram creator intelligence
+# Region-wise creator discovery
 
-Two capabilities, one permanent store.
+Find and verify creators for any region / category / campaign, accumulating
+into `creator_intelligence.db` so a client brief becomes a *query*, not a
+new scrape. Full reference: `docs/CREATOR_DB.md`.
 
-- **Discovery** — find and verify creators for any region / category /
-  campaign, accumulating into `creator_intelligence.db` so a client brief is
-  a *query*, not a new scrape.
-- **Page momentum audit** — given a list of pages, measure current
-  traction (exact views, likes, comments, dates on the latest posts) and give
-  an Invest / Don't Invest call ranked against peers.
+## How to handle a plain-English request
 
-Full references: `docs/CREATOR_DB.md` and `docs/PAGE_AUDIT.md`. Read the
-one you need before running anything.
+1. Confirm `.env` exists (see CLAUDE.md Step 0).
+2. Pull out: region, category (optional), follower floor (default 10K),
+   campaign (optional), whether they want email, how many they need.
+3. `python core/creator_db.py stats` - if the store already has enough
+   verified creators for that region, answer with `deliver` and stop.
+4. Otherwise run harvest -> audit -> (deepscan) -> deliver below and tell
+   the user the timing first:
+   - harvest: 20-60 min per region
+   - audit: about 10 s per lead; `--limit 400` is roughly an hour
+   - deepscan: 60-90 s per creator; 400 creators is 8-10 h, run overnight
+5. Deliver a workbook in `deliverables/` and summarise in plain English:
+   how many creators, how residence was proven, what the columns mean.
+
+Fresh clone: run `python core/regional_engine.py backfill` once; the store
+starts empty.
 
 ## Rules that never bend
 
@@ -125,37 +135,6 @@ every roster and workbook already in the repo into the store (recovered
 
 Hub seed lists rot — 9 of the original 16 were dead. `seed_health_check()`
 runs first.
-
-## Page momentum audit
-
-Input: a text file of handles under `## Tab Name` headers. Output: one
-consolidated sheet, tab carried as a column, no emojis, no colours.
-
-```bash
-python page_audit.py --input mylist.txt --output MyList.xlsx --pause 1.0
-python page_audit.py --input mylist.txt --output MyList.xlsx --excel-only   # rebuild from cache
-```
-
-Uses the web app's own GraphQL queries (`PolarisProfilePostsQuery`,
-`PolarisProfileReelsTabContentQuery`), which work while the REST feed is
-throttled. ~10 s per new page; cache is shared across lists.
-
-**Verdict:** Stage 1 floors (posted ≤ 21 days, median views ≥ 2% of
-followers, median ≥ 25% of average views) then Stage 2 peer ranking within
-the tab (60% reach, 20% consistency, 20% comments-per-view); Invest = clears
-floors and ≥ tab median. Peer-relative because reach and engagement fall
-structurally with size — a fixed bar marked every large page a failure.
-
-**Do not reintroduce these bugs:**
-- posts feed and reels feed return *different* posts — join on post code,
-  use only the intersection for anything involving views
-- engagement vs followers overstates badly when reach ≫ followers — report
-  **Engagement Per View %** too; sane band 1–12%, median ~1.25%
-- pinned posts are old trophies — exclude
-- hidden likes come back as `3` — print "Hidden by page"
-
-Before sending: 0 emoji cells, 0 fills, Engagement Per View under 25%
-everywhere, `Posts With Matched View Data` > 0 on every row with views.
 
 ## Chatbot discovery
 

@@ -1,25 +1,49 @@
 # Instagram Media X Creatives
 
-Three free, session-cookie-based Instagram tools for influencer marketing:
+Free influencer-marketing tools that run through your own Instagram login. No paid APIs.
 
-1. **Region-wise creator discovery** - find, verify and deep-scan creators who actually live in a city (Kolkata, Punjab, Hyderabad, Chennai, Mumbai, Delhi, Bangalore), with exact follower counts, emails, 90-day brand partnerships and content category.
-2. **Page momentum audit (Invest / Don't Invest)** - given a list of Instagram pages, sample their last 12 posts and rank them on current momentum.
-3. **Brand collaborator 4-tier scan** - given a brand's Instagram URL, find every creator who collaborated with it in the last 1 or 2 years and sort them into four tiers by paid-partnership toggle and boosted ad spend.
+It does three things:
 
-No paid APIs. Everything runs through your own logged-in Instagram session.
+1. **Find creators from a city** - "give me Kolkata food creators above 20K with email". Exact follower counts, proof they live there, 90-day brand partnerships, content category.
+2. **Invest / Don't Invest on a list of pages** - paste any list of Instagram pages and get a verdict per page with the metrics behind it.
+3. **Who a brand worked with** - give a brand's Instagram URL and get every collaborator from the last 1-2 years sorted into 4 tiers (paid + boosted, paid, undisclosed boosted, organic).
 
-## Setup
+## Quick start (no coding needed)
+
+**1. Install** - once. You need Python 3.10+ installed ([python.org](https://www.python.org/downloads/), tick "Add to PATH").
 
 ```bash
+git clone git@github.com:quvoid/Instagram----Media-X-Creatives.git
+cd Instagram----Media-X-Creatives
 pip install -r requirements.txt
-cp .env.example .env      # fill in from a logged-in browser: DevTools -> Application -> Cookies -> instagram.com
 ```
 
-`.env` is git-ignored. A `sessionid` is a login - never commit it. If it leaks, log out of all sessions in Instagram settings.
+**2. Connect your Instagram** - once. This asks you for four cookies from your browser and checks they work. It tells you exactly where to click.
+
+```bash
+python setup.py
+```
+
+Your login is saved only to a local `.env` file that git ignores. It never leaves your machine except to talk to instagram.com. If Instagram logs you out, run `python setup.py` again.
+
+**3. Open the folder in Claude Code** (or Cursor / any agent IDE) and just say what you want:
+
+- "find kolkata food creators above 20k followers with email"
+- "audit these pages for invest / don't invest" - then paste your list, headings and all
+- "who did CRED collaborate with in the last 2 years, in tiers"
+- "how many creators do we have for chennai"
+
+The agent reads `CLAUDE.md` and the skills in `.claude/skills/`, picks the right tool, tells you how long it will take, runs it, and puts the workbook in `deliverables/`. If `.env` is missing it will tell you to run `python setup.py` first.
+
+Everything below is for people who want to run the scripts directly.
+
+---
 
 ## Layout
 
 ```
+setup.py                     first-run wizard: cookies -> .env, session check, browser install
+CLAUDE.md                    what an agent does with a plain-English request
 core/session.py              cookies from .env (the only place credentials come from)
 core/profile_auditor.py      exact follower-count ladder, throttle detection, 10K gate
 core/discovery_sources.py    region/category/campaign definitions + all free harvesters
@@ -35,7 +59,7 @@ scripts/run_kolkata_deep.py  one-shot: harvest -> audit -> deepscan -> export
 scripts/status.py            progress of a running pipeline
 docs/CREATOR_DB.md           schema, SQL recipes, worked client briefs
 docs/PAGE_AUDIT.md           metrics and verdict logic in full
-.claude/skills/              agent skill for Claude Code / any IDE agent
+.claude/skills/              one skill per tool: region-creator-discovery, page-momentum-audit, brand-collab-tiers
 ```
 
 ## 1. Region-wise creator discovery
